@@ -25,7 +25,7 @@ class XTRAM( Estimator ):
     r"""
     I am the xTRAM estimator
     """
-    def __init__( self, C_K_ij, u_IK_t , M_K_t, N_K_j, kT = None, target = None, verbose = False ):
+    def __init__( self, C_K_ij, u_I_x, T_x, M_x, N_K_i, target = None, verbose = False ):
         r"""
         Initialize the XTRAM object
         
@@ -48,8 +48,8 @@ class XTRAM( Estimator ):
         self.verbose = verbose
         
         self.u_IK_t = u_IK_t
-        self.M_K_t = M_K_t
-        self.N_K_j = N_K_j
+        self.M_x = M_x
+        self.N_K_i = N_K_i
         if kT!=None:
             self.kT = kT
         
@@ -222,7 +222,7 @@ class XTRAM( Estimator ):
         _b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
         for I in xrange(self.n_therm_states):
             for t in xrange(self.N_K[I]):
-                i=self.M_K_t[I][t] #this is the current Markov state
+                i=self.M_x[I][t] #this is the current Markov state
                 therm_sum = 0.0 
                 for J in xrange(self.n_therm_states):
                     if I!=J:
@@ -370,7 +370,7 @@ class XTRAM( Estimator ):
     ####################################################################
 
     def _compute_N_K( self ):
-        return np.sum(self.N_K_j, axis=1).astype(np.int32)
+        return np.sum(self.N_K_i, axis=1).astype(np.int32)
         
     ####################################################################
     #                                                                  #
@@ -431,72 +431,51 @@ class XTRAM( Estimator ):
         return True
     
     @property
-    def M_K_t( self ):
-        return self._M_K_t
+    def M_x( self ):
+        return self._M_x
 
-    @M_K_t.setter
-    def M_K_t( self, M_K_t ):
-        self._M_K_t = None
-        if self._check_M_K_t( M_K_t ):
+    @M_x.setter
+    def M_x( self, M_x ):
+        self._M_x = None
+        if self._check_M_x( M_x ):
             if self.verbose:
-                print "M_K_t check pass"
-            self._M_K_t = M_K_t
+                print "M_x check pass"
+            self._M_x = M_x
 
-    def _check_M_K_t( self, M_K_t ):
-        if M_K_t is None:
-            raise ExpressionError( "M_K_t", "is None" )
-        if not isinstance( M_K_t, (np.ndarray,) ):
-            raise ExpressionError( "M_K_t", "invalid type (%s)" % str( type( M_K_t ) ) )
-        if 2 != M_K_t.ndim:
-            raise ExpressionError( "M_K_t", "invalid number of dimensions (%d)" % M_K_t.ndim )
-        if M_K_t.shape[0] != self.n_therm_states:
-            raise ExpressionError( "M_K_t", "unmatching number of thermodynamic states (%d,%d)" % (M_K_t.shape[0], self.n_therm_states) )
-        if M_K_t.shape[1] != self.u_IK_t.shape[2]:
-            raise ExpressionError( "M_K_t", "unmatching number thermodynamic samples (%d,%d)" % (M_K_t.shape[1], self.u_IK_t.shape[2]) )
-        if np.float64 != M_K_t.dtype:
-            raise ExpressionError( "M_K_t", "invalid dtype (%s)" % str( M_K_t.dtype ) )
+    def _check_M_x( self, M_x ):
+        if M_x is None:
+            raise ExpressionError( "M_x", "is None" )
+        if not isinstance( M_x, (np.ndarray,) ):
+            raise ExpressionError( "M_x", "invalid type (%s)" % str( type( M_x ) ) )
+        if 2 != M_x.ndim:
+            raise ExpressionError( "M_x", "invalid number of dimensions (%d)" % M_x.ndim )
+        if M_x.shape[0] != self.n_therm_states:
+            raise ExpressionError( "M_x", "unmatching number of thermodynamic states (%d,%d)" % (M_x.shape[0], self.n_therm_states) )
+        if M_x.shape[1] != self.u_IK_t.shape[2]:
+            raise ExpressionError( "M_x", "unmatching number thermodynamic samples (%d,%d)" % (M_x.shape[1], self.u_IK_t.shape[2]) )
+        if np.float64 != M_x.dtype:
+            raise ExpressionError( "M_x", "invalid dtype (%s)" % str( M_x.dtype ) )
         return True
         
     @property
-    def N_K_j( self ):
-        return self._N_K_j
+    def N_K_i( self ):
+        return self._N_K_i
         
-    @N_K_j.setter
-    def N_K_j( self, N_K_j ):
-        self._N_k_j = None
-        if self._check_N_K_j( N_K_j ):
-            self._N_K_j = N_K_j
+    @N_K_i.setter
+    def N_K_i( self, N_K_i ):
+        self._N_K_i = None
+        if self._check_N_K_i( N_K_i ):
+            self._N_K_i = N_K_i
     
-    def _check_N_K_j( self, N_K_j ):
-        if N_K_j is None:
-            raise ExpressionError( "N_K_j", "is None" )
-        if not isinstance( N_K_j, (np.ndarray,) ):
-            raise ExpressionError( "N_K_j", "invalid type (%s)" % str( type( N_K_j ) ) )
-        if 2 != N_K_j.ndim:
-            raise ExpressionError( "N_K_j", "invalid number of dimensions (%d)" % N_K_j.ndim )
-        if N_K_j.shape[0] != self.n_therm_states:
-            raise ExpressionError( "N_K_j", "unmatching number of thermodynamic states (%d,%d)" % (N_K_j.shape[0], self.n_therm_states) )
-        if N_K_j.shape[1] != self.n_markov_states:
-            raise ExpressionError( "N_K_j", "unmatching number of Markov states (%d,%d)" % (N_K_j.shape[1], self.n_markov_states) )
+    def _check_N_K_i( self, N_K_i ):
+        if N_K_i is None:
+            raise ExpressionError( "N_K_i", "is None" )
+        if not isinstance( N_K_i, (np.ndarray,) ):
+            raise ExpressionError( "N_K_i", "invalid type (%s)" % str( type( N_K_i ) ) )
+        if 2 != N_K_i.ndim:
+            raise ExpressionError( "N_K_i", "invalid number of dimensions (%d)" % N_K_i.ndim )
+        if N_K_i.shape[0] != self.n_therm_states:
+            raise ExpressionError( "N_K_i", "unmatching number of thermodynamic states (%d,%d)" % (N_K_i.shape[0], self.n_therm_states) )
+        if N_K_i.shape[1] != self.n_markov_states:
+            raise ExpressionError( "N_K_i", "unmatching number of Markov states (%d,%d)" % (N_K_i.shape[1], self.n_markov_states) )
         return True
-    
-    @property
-    def kT( self ):
-        return self._kT
-    
-    @kT.setter
-    def kT( self, kT ):
-        self._kT = None
-        if self._check_kT( kT ):
-            self._kT = kT
-            
-    def _check_kT( self, kT ):
-       if kT is None:
-           raise ExpressionError( "N_K_j", "is None" )
-       if not isinstance( kT, (np.ndarray,) ):
-           raise ExpressionError( "kT", "invalid type (%s)" % str( type( kT ) ) )
-       if 1!= kT.ndim:
-           raise ExpressionError( "kT", "invalid number of dimensions (%d)" % kT.ndim )
-       if kT.shape[0]!=self.n_therm_states:
-           raise ExpressionError( "kT", "unmatching number of thermodynamic states (%d,%d)" % (kT.shape[0], self.n_therm_states) )
-       return True

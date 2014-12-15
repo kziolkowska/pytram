@@ -25,7 +25,7 @@ class XTRAM( Estimator ):
     r"""
     I am the xTRAM estimator
     """
-    def __init__( self, C_K_ij, u_I_x, T_x, M_x, N_K_i, target = None, verbose = False ):
+    def __init__( self, C_K_ij, u_I_x, T_x, M_x, N_K_i, N_K, target = None, verbose = False ):
 
         r"""
         Initialize the XTRAM object
@@ -50,12 +50,8 @@ class XTRAM( Estimator ):
         
         self.u_IK_t = u_IK_t
         self.M_x = M_x
-        self.N_K_i = N_K_i
-
-        if kT!=None:
-            self.kT = kT
-        
-        self.N_K = self._compute_N_K()
+        self.N_K_i = N_K_i       
+        self.N_K = N_k
         self.w_K = self._compute_w_K()
         self.f_K = self._compute_f_K()
         self.pi_K_i = self._compute_pi_K_i()
@@ -223,15 +219,15 @@ class XTRAM( Estimator ):
         """
         _b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
         for I in xrange(self.n_therm_states):
-            for t in xrange(self.N_K[I]):
-                i=self.M_x[I][t] #this is the current Markov state
+            for x in xrange(self.N_K[I]):
+                i=self.M_x[x] #this is the current Markov state
 
 
                 therm_sum = 0.0 
                 for J in xrange(self.n_therm_states):
                     if I!=J:
                         var = 0
-                        exponent = self.f_K[J]-self.f_K[I]+self.u_IK_t[I,I,t]-self.u_IK_t[J,I,t]
+                        exponent = self.f_K[I]-self.f_K[J]+self.u_I_x[J,x]-self.u_I_x[I,x]
                         if exponent > 10:
                             var =self.w_K[I]*1.0
                             #print "yes!"
@@ -340,14 +336,14 @@ class XTRAM( Estimator ):
         """
         numerator = 0.0
         denominator = 0.0
-        for t in xrange (self.N_K[I]):
-            exponent = self.u_IK_t[I,I,t]-self.u_IK_t[I_plus_1,I,t]
+        for x in xrange (self.N_K[I]):
+            exponent = self.u_I_x[I,x]-self.u_I_x[I_plus_1,x]
             if exponent>0:
                 numerator+=1
             else:
                 numerator += min(1,np.exp(exponent))
         for t in xrange (self.N_K[I_plus_1]):
-            exponent = self.u_IK_t[I_plus_1,I_plus_1,t]-self.u_IK_t[I,I_plus_1,t]
+            exponent = self.u_I_x[I_plus_1,x]-self.u_I_x[I,x]
             if exponent>0:
                 denominator+=1
             else:
@@ -366,15 +362,6 @@ class XTRAM( Estimator ):
         _pi_K_i = np.ones(self.n_therm_states*self.n_markov_states).reshape(self.n_therm_states,self.n_markov_states)
         
         return _pi_K_i
-
-    ####################################################################
-    #                                                                  #
-    # Computes the number of thermoydnamic samples                     #
-    #                                                                  #
-    ####################################################################
-
-    def _compute_N_K( self ):
-        return np.sum(self.N_K_i, axis=1).astype(np.int32)
 
         
     ####################################################################
@@ -411,28 +398,28 @@ class XTRAM( Estimator ):
     ####################################################################
 
     @property
-    def u_IK_t( self ):
-        return self._u_IK_t
+    def u_I_x( self ):
+        return self._u_I_x
         
     @u_IK_t.setter
-    def u_IK_t( self, u_IK_t ):
-        self._u_IK_t = None
-        if self._check_u_IK_t( u_IK_t ):
-            self._u_IK_t = u_IK_t
+    def u_I_x( self, u_I_x ):
+        self._u_I_x = None
+        if self._check_u_I_x( u_I_x ):
+            self._u_I_x = u_I_x
     
-    def _check_u_IK_t( self, u_IK_t ):
-        if None == u_IK_t:
-            raise ExpressionError( "u_IK_t", "is None" )
-        if not isinstance( u_IK_t, (np.ndarray,) ):
-            raise ExpressionError( "u_IK_t", "invalid type (%s)" % str( type( u_IK_t ) ) )
-        if 3 != u_IK_t.ndim:
-            raise ExpressionError( "u_IK_t", "invalid number of dimensions (%d)" % u_IK_t.ndim )
-        if u_IK_t.shape[0] != self.n_therm_states:
-            raise ExpressionError( "U_IK_t", "unmatching number of thermodynamic states (%d,%d)" % (u_IK_t.shape[0], self.n_therm_states) )
-        if u_IK_t.shape[1] != self.n_therm_states:
-            raise ExpressionError( "u_IK_t", "unmatching number of thermodynamic states (%d,%d)" % (u_IK_t.shape[1], self.n_therm_states) )
-        if np.float64 != u_IK_t.dtype:
-            raise ExpressionError( "u_IK_t", "invalid dtype (%s)" % str( u_IK_t.dtype ) )
+    def _check_u_I_x( self, u_I_x ):
+        if None == u_I_x:
+            raise ExpressionError( "u_I_x", "is None" )
+        if not isinstance( u_I_x, (np.ndarray,) ):
+            raise ExpressionError( "u_I_x", "invalid type (%s)" % str( type( u_I_x ) ) )
+        if 3 != u_I_x.ndim:
+            raise ExpressionError( "u_I_x", "invalid number of dimensions (%d)" % u_I_x.ndim )
+        if u_I_x.shape[0] != self.n_therm_states:
+            raise ExpressionError( "u_I_x", "unmatching number of thermodynamic states (%d,%d)" % (u_I_x.shape[0], self.n_therm_states) )
+        if u_I_x.shape[1] != self.n_therm_states:
+            raise ExpressionError( "u_I_x", "unmatching number of thermodynamic states (%d,%d)" % (u_I_x.shape[1], self.n_therm_states) )
+        if np.float64 != u_I_x.dtype:
+            raise ExpressionError( "u_I_x", "invalid dtype (%s)" % str( u_I_x.dtype ) )
         return True
     
     @property
@@ -452,12 +439,10 @@ class XTRAM( Estimator ):
             raise ExpressionError( "M_x", "is None" )
         if not isinstance( M_x, (np.ndarray,) ):
             raise ExpressionError( "M_x", "invalid type (%s)" % str( type( M_x ) ) )
-        if 2 != M_x.ndim:
+        if 1 != M_x.ndim:
             raise ExpressionError( "M_x", "invalid number of dimensions (%d)" % M_x.ndim )
-        if M_x.shape[0] != self.n_therm_states:
-            raise ExpressionError( "M_x", "unmatching number of thermodynamic states (%d,%d)" % (M_x.shape[0], self.n_therm_states) )
-        if M_x.shape[1] != self.u_IK_t.shape[2]:
-            raise ExpressionError( "M_x", "unmatching number thermodynamic samples (%d,%d)" % (M_x.shape[1], self.u_IK_t.shape[2]) )
+        if M_x.shape[1] != self.u_I_x.shape[2]:
+            raise ExpressionError( "M_x", "unmatching number thermodynamic samples (%d,%d)" % (M_x.shape[1], self.u_I_x.shape[2]) )
         if np.float64 != M_x.dtype:
             raise ExpressionError( "M_x", "invalid dtype (%s)" % str( M_x.dtype ) )
         return True

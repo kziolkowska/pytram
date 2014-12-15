@@ -26,6 +26,7 @@ class XTRAM( Estimator ):
     I am the xTRAM estimator
     """
     def __init__( self, C_K_ij, u_I_x, T_x, M_x, N_K_i, target = None, verbose = False ):
+
         r"""
         Initialize the XTRAM object
         
@@ -50,6 +51,7 @@ class XTRAM( Estimator ):
         self.u_IK_t = u_IK_t
         self.M_x = M_x
         self.N_K_i = N_K_i
+
         if kT!=None:
             self.kT = kT
         
@@ -223,6 +225,8 @@ class XTRAM( Estimator ):
         for I in xrange(self.n_therm_states):
             for t in xrange(self.N_K[I]):
                 i=self.M_x[I][t] #this is the current Markov state
+
+
                 therm_sum = 0.0 
                 for J in xrange(self.n_therm_states):
                     if I!=J:
@@ -371,6 +375,7 @@ class XTRAM( Estimator ):
 
     def _compute_N_K( self ):
         return np.sum(self.N_K_i, axis=1).astype(np.int32)
+
         
     ####################################################################
     #                                                                  #

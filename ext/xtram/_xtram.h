@@ -11,7 +11,7 @@
 
 #include <math.h>
 
-void _B_i_IJ_equation(
+void _b_i_IJ_equation(
 	int T_length, 
 	int n_therm_states, 
 	int n_markov_states,

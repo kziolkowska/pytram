@@ -84,15 +84,15 @@ class XTRAM( Estimator ):
         """
         finc = None
         f_old = np.zeros(self.f_K.shape[0])
+        b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
         if verbose:
             print "# %8s %16s" % ( "[Step]", "[rel. Increment]" )
         for i in xrange(maxiter):
             f_old[:]=self.f_K[:]
-            self.b_i_IJ = self._compute_b_i_IJ()
+            b_i_IJ_equation( self.T_x, self.M_x, self.N_K, self.f_K, self.w_K, self.u_I_x, b_i_IJ )
             N_tilde = self._compute_sparse_N()
             self._x_iteration(N_tilde)
             self._update_free_energies()
-            print self.f_K
             finc = np.sum(np.abs(f_old-self.f_K))
             if verbose:
                 print "  %8d %16.8e" % ( i+1, finc )
@@ -210,41 +210,6 @@ class XTRAM( Estimator ):
         for K in xrange( self.f_K.shape[0] ):
             self.f_K[K] = self.f_K[K]- np.log((np.sum(self.N_K).astype(float)/self.N_K[K])*(np.sum(self.pi_K_i[K,:])))
 
-        
-    ####################################################################
-    #                                                                  #
-    # Computes b_i^KI matrix                                           #
-    #                                                                  #
-    ####################################################################    
-    #replace by c-function for speed
-    def _compute_b_i_IJ( self ):
-        b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
-        B_i_IJ_equation( self.T_x, self.M_x, self.N_K, self.f_K, self.w_K, self.u_I_x, b_i_IJ )
-        return b_i_IJ
-    '''    
-    def _compute_b_i_IJ( self ):
-        r"""computes the b_i_IJ temperature transition counts
-        
-        """
-        _b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
-        for x in xrange(self.T_x.shape[0]):
-            i=self.M_x[x] #this is the current Markov state of sample at x
-            I=self.T_x[x] #current thermodynamic state of sample at x
-            therm_sum = 0.0 
-            for J in xrange(self.n_therm_states):
-                if I!=J:
-                    var = 0
-                    exponent = self.f_K[J]-self.f_K[I]+self.u_I_x[I,x]-self.u_I_x[J,x]
-                    if exponent > 10:
-                        var =self.w_K[I]*1.0
-                    else:
-                        factor = float(self.N_K[J])/self.N_K[I]
-                        var = self.w_K[I]*min(1.0, factor*np.exp(exponent))
-                        therm_sum += var
-                        _b_i_IJ[i][I][J] += var
-            _b_i_IJ[i][I][I] += 1-therm_sum
-        return _b_i_IJ
-        '''
         
     ####################################################################
     #                                                                  #

@@ -9,11 +9,18 @@ ext_dtram = Extension(
         include_dirs=[np.get_include()],
         extra_compile_args=["-O3"]
     )
+ext_xtram = Extension(
+        "pytram.xtram.ext",
+        sources=["ext/xtram/xtram.pyx", "ext/xtram/_xtram.c" ],
+        include_dirs=[np.get_include()],
+        extra_compile_args=["-O3"]
+    )
 
 setup(
     cmdclass={'build_ext': build_ext},
     ext_modules=[
-            ext_dtram
+            ext_dtram,
+            ext_xtram
         ],
     name='pytram',
     version='0.1.2',

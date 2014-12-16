@@ -10,6 +10,7 @@ xTRAM estimator module
 
 import numpy as np
 from ..estimator import Estimator, NotConvergedWarning, ExpressionError
+from .ext import B_i_IJ_equation
 
 
 
@@ -217,6 +218,11 @@ class XTRAM( Estimator ):
     ####################################################################    
     #replace by c-function for speed
     def _compute_b_i_IJ( self ):
+        b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
+        B_i_IJ_equation( self.T_x, self.M_x, self.N_K, self.f_K, self.w_K, self.u_I_x, b_i_IJ )
+        return b_i_IJ
+    '''    
+    def _compute_b_i_IJ( self ):
         r"""computes the b_i_IJ temperature transition counts
         
         """
@@ -238,6 +244,7 @@ class XTRAM( Estimator ):
                         _b_i_IJ[i][I][J] += var
             _b_i_IJ[i][I][I] += 1-therm_sum
         return _b_i_IJ
+        '''
         
     ####################################################################
     #                                                                  #

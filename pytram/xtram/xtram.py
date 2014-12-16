@@ -9,7 +9,7 @@ xTRAM estimator module
 """
 
 import numpy as np
-from .. import Estimator, NotConvergedWarning, ExpressionError
+from ..estimator import Estimator, NotConvergedWarning, ExpressionError
 
 
 
@@ -55,18 +55,18 @@ class XTRAM( Estimator ):
         self.verbose = verbose
         
         self.u_I_x = u_I_x
-        self.M_x = M_x
         self.T_x = T_x
+        self.M_x = M_x
         self.N_K_i = N_K_i       
         self.N_K = N_K
         self.w_K = self._compute_w_K()
         self.f_K = self._compute_f_K()
         self.pi_K_i = self._compute_pi_K_i()
-        self._f_tol = 10e-15
-        self._maxiter = 1000000
+        self._ftol = 10e-8
+        self._maxiter = 1000
         
         
-    def sc_iteration( self , ftol=10e-10, maxiter = 10, verbose = False):
+    def sc_iteration( self , ftol=10e-4, maxiter = 10, verbose = False):
         r"""Main iteration method
         Parameters
         ----------
@@ -89,7 +89,7 @@ class XTRAM( Estimator ):
             f_old[:]=self.f_K[:]
             self.b_i_IJ = self._compute_b_i_IJ()
             N_tilde = self._compute_sparse_N()
-            self._x_scf_iteration(N_tilde)
+            self._x_iteration(N_tilde)
             self._update_free_energies()
             print self.f_K
             finc = np.sum(np.abs(f_old-self.f_K))
@@ -228,7 +228,7 @@ class XTRAM( Estimator ):
             for J in xrange(self.n_therm_states):
                 if I!=J:
                     var = 0
-                    exponent = self.f_K[I]-self.f_K[J]+self.u_I_x[J,x]-self.u_I_x[I,x]
+                    exponent = self.f_K[J]-self.f_K[I]+self.u_I_x[I,x]-self.u_I_x[J,x]
                     if exponent > 10:
                         var =self.w_K[I]*1.0
                     else:
@@ -311,8 +311,9 @@ class XTRAM( Estimator ):
     def _compute_f_K( self ):
         _f_K = np.ones(self.n_therm_states)
         bar_ratio = self._bar_ratio()
+        print bar_ratio
         for I in xrange (1,self.n_therm_states):
-            _f_K[I] = _f_K[I-1] - np.log(self._bar_ratio[I-1])
+            _f_K[I] = _f_K[I-1] - np.log(bar_ratio[I-1])
         print _f_K
         return _f_K
         
@@ -327,16 +328,16 @@ class XTRAM( Estimator ):
         I_plus_one = np.zeros(self.n_therm_states)
         I_minus_one = np.zeros(self.n_therm_states)
         for x in xrange(self.T_x.shape[0]):
-            I = T_x[x]
+            I = self.T_x[x]
             if I==0:
                 I_plus_one[I]+=self._metropolis(self.u_I_x[I,x],self.u_I_x[I+1,x])
-            if I==self.n_therm_states-1:
+            elif I==self.n_therm_states-1:
                 I_minus_one[I]+=self._metropolis(self.u_I_x[I,x], self.u_I_x[I-1,x])
             else:
                 I_plus_one[I]+=self._metropolis(self.u_I_x[I,x],self.u_I_x[I+1,x])
                 I_minus_one[I]+=self._metropolis(self.u_I_x[I,x], self.u_I_x[I-1,x])
         for I in xrange(bar_ratio.shape[0]):
-            bar_ratio[I]=(self.N_K[I+1]/self.N_K[I])*(I_plus_one[I]/I_minus_one[I+1])
+            bar_ratio[I]=(I_plus_one[I]/I_minus_one[I+1])*(self.N_K[I+1].astype('float')/self.N_K[I].astype('float'))
         return bar_ratio
         
     ####################################################################
@@ -346,10 +347,10 @@ class XTRAM( Estimator ):
     ####################################################################
         
     def _metropolis( self, u_1, u_2 ):
-        if u_1-u_2>0:
-            return 1
+        if (u_1-u_2)>0:
+            return 1.0
         else:
-            return np.min(1,exp(u_1-u_2))
+            return np.exp(u_1-u_2)
             
     
     ####################################################################
@@ -401,7 +402,7 @@ class XTRAM( Estimator ):
     def u_I_x( self ):
         return self._u_I_x
         
-    @u_IK_t.setter
+    @u_I_x.setter
     def u_I_x( self, u_I_x ):
         self._u_I_x = None
         if self._check_u_I_x( u_I_x ):
@@ -441,7 +442,7 @@ class XTRAM( Estimator ):
             raise ExpressionError( "M_x", "invalid number of dimensions (%d)" % M_x.ndim )
         if M_x.shape[0] != self.u_I_x.shape[1]:
             raise ExpressionError( "M_x", "unmatching number thermodynamic samples (%d,%d)" % (M_x.shape[0], self.u_I_x.shape[1]) )
-        if np.float64 != M_x.dtype:
+        if np.int32 != M_x.dtype:
             raise ExpressionError( "M_x", "invalid dtype (%s)" % str( M_x.dtype ) )
         return True
         
@@ -449,7 +450,7 @@ class XTRAM( Estimator ):
     def T_x( self ):
         return self._T_x
 
-    @M_x.setter
+    @T_x.setter
     def T_x( self, T_x ):
         self._T_x = None
         if self._check_T_x( T_x ):
@@ -466,8 +467,9 @@ class XTRAM( Estimator ):
             raise ExpressionError( "T_x", "invalid number of dimensions (%d)" % T_x.ndim )
         if T_x.shape[0] != self.u_I_x.shape[1]:
             raise ExpressionError( "T_x", "unmatching number thermodynamic samples (%d,%d)" % ( T_x.shape[0], self.u_I_x.shape[1] ) )
-        if np.float64 != T_x.dtype:
+        if np.int32 != T_x.dtype:
             raise ExpressionError( "T_x", "invalid dtype (%s)" % str( T_x.dtype ) )
+        return True
         
     @property
     def N_K_i( self ):

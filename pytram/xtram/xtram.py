@@ -10,7 +10,7 @@ xTRAM estimator module
 
 import numpy as np
 from ..estimator import Estimator, NotConvergedWarning, ExpressionError
-from .ext import B_i_IJ_equation
+from .ext import b_i_IJ_equation
 
 
 
@@ -63,8 +63,8 @@ class XTRAM( Estimator ):
         self.w_K = self._compute_w_K()
         self.f_K = self._compute_f_K()
         self.pi_K_i = self._compute_pi_K_i()
-        self._ftol = 10e-8
-        self._maxiter = 1000
+        self._ftol = 10e-15
+        self._maxiter = 100000
         
         
     def sc_iteration( self , ftol=10e-4, maxiter = 10, verbose = False):
@@ -84,12 +84,12 @@ class XTRAM( Estimator ):
         """
         finc = None
         f_old = np.zeros(self.f_K.shape[0])
-        b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
+        self.b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
         if verbose:
             print "# %8s %16s" % ( "[Step]", "[rel. Increment]" )
         for i in xrange(maxiter):
             f_old[:]=self.f_K[:]
-            b_i_IJ_equation( self.T_x, self.M_x, self.N_K, self.f_K, self.w_K, self.u_I_x, b_i_IJ )
+            b_i_IJ_equation( self.T_x, self.M_x, self.N_K, self.f_K, self.w_K, self.u_I_x, self.b_i_IJ )
             N_tilde = self._compute_sparse_N()
             self._x_iteration(N_tilde)
             self._update_free_energies()
@@ -381,7 +381,7 @@ class XTRAM( Estimator ):
             self._u_I_x = u_I_x
     
     def _check_u_I_x( self, u_I_x ):
-        if None == u_I_x:
+        if u_I_x is None:
             raise ExpressionError( "u_I_x", "is None" )
         if not isinstance( u_I_x, (np.ndarray,) ):
             raise ExpressionError( "u_I_x", "invalid type (%s)" % str( type( u_I_x ) ) )

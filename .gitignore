@@ -2,6 +2,7 @@
 *.so
 build
 ext/dtram/dtram.c
+ext/xtram/xtram.c
 .ipynb_checkpoints
 pytram.egg-info
 setup.cfg

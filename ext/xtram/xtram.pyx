@@ -2,7 +2,7 @@ import numpy as np
 cimport numpy as np
 
 cdef extern from "_xtram.h":
-	void _B_i_IJ_equation(
+	void _b_i_IJ_equation(
 		int T_length, 
 		int n_therm_states, 
 		int n_markov_states,
@@ -27,7 +27,7 @@ cdef extern from "_xtram.h":
 		double *c_column,
 		double *pi)
 
-def B_i_IJ_equation(
+def b_i_IJ_equation(
 		np.ndarray[int, ndim=1, mode="c"] T_x not None,
 		np.ndarray[int, ndim=1, mode="c"] M_x not None,
 		np.ndarray[int, ndim=1, mode="c"] N_K not None,
@@ -36,7 +36,7 @@ def B_i_IJ_equation(
 		np.ndarray[double, ndim=2, mode="c"] u_K_x not None,
 		np.ndarray[double, ndim=3, mode="c"] b_i_IJ not None
 	):
-	_B_i_IJ_equation(
+	_b_i_IJ_equation(
 		T_x.shape[0],
 		N_K.shape[0],
 		b_i_IJ.shape[0],

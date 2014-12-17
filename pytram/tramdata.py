@@ -52,7 +52,7 @@ class TRAMData( object ):
 
     @property
     def n_markov_states( self ):
-        if None == self._n_markov_states:
+        if self._n_markov_states is None:
             self._n_markov_states = 0
             for traj in self.trajs:
                 max_state = np.max( traj['m'] )
@@ -63,7 +63,7 @@ class TRAMData( object ):
 
     @property
     def n_therm_states( self ):
-        if None == self._n_therm_states:
+        if self._n_therm_states is None:
             self._n_therm_states = 0
             for traj in self.trajs:
                 max_state = np.max( traj['t'] )

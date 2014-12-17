@@ -13,7 +13,19 @@ cdef extern from "_xtram.h":
 		double *w,
 		double *u,
 		double *b_i_IJ)
-
+		
+	double _iterate_x(
+		int n_entries,
+		int pi_length,
+		int maxiter,
+		double ftol,
+		int *C_i,
+		int *C_j,
+		double *C_ij,
+		double *C_ji,
+		double *x_row,
+		double *c_column,
+		double *pi)
 
 def B_i_IJ_equation(
 		np.ndarray[int, ndim=1, mode="c"] T_x not None,
@@ -36,4 +48,7 @@ def B_i_IJ_equation(
 		<double*> np.PyArray_DATA( u_K_x ),
 		<double*> np.PyArray_DATA( b_i_IJ )
 		)
+
+def iterate_x():
+	return _iterate_x()
 

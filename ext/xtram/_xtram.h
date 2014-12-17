@@ -11,6 +11,14 @@
 
 #include <math.h>
 
+typedef struct
+{
+	int i;
+	int j;
+	double value;
+}sparse_x;
+
+
 void _B_i_IJ_equation(
 	int T_length, 
 	int n_therm_states, 
@@ -22,6 +30,32 @@ void _B_i_IJ_equation(
 	double *w,
 	double *u,
 	double *b_i_IJ);
+	
+double _iterate_x(
+	int n_entries,
+	int pi_length,
+	int maxiter,
+	double ftol,
+	int *C_i,
+	int *C_j,
+	double *C_ij,
+	double *C_ji,
+	double *x_row,
+	double *c_column,
+	double *pi);
+
+void update_x( 
+	double *x_row, 
+	sparse_x *x, 
+	int *C_i, 
+	int *C_j, 
+	double *C_ij, 
+	double *C_ji, 
+	double *c_column, 
+	int L);
+void update_x_row(int L, sparse_x *x, double *x_row, int x_row_l);
+void compute_pi(double *pi, double *x_row, int l_pi);
+double converged(double *pi_old, double *pi_new, int l_pi);
 
 
 #endif

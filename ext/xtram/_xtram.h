@@ -10,6 +10,8 @@
 #define PYTRAM_XTRAM
 
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 
 typedef struct
@@ -34,9 +36,9 @@ void _b_i_IJ_equation(
 	double *b_i_IJ);
 	
 double _iterate_x(
-	int n_entries,
-	int pi_length,
-	int maxiter,
+	long n_entries,
+	long pi_length,
+	long maxiter,
 	double ftol,
 	int *C_i,
 	int *C_j,
@@ -58,6 +60,7 @@ void update_x(
 void update_x_row(int L, sparse_x *x, double *x_row, int x_row_l);
 void compute_pi(double *pi, double *x_row, int l_pi);
 double converged(double *pi_old, double *pi_new, int l_pi);
+void printpi(double *pi, int l);
 
 
 #endif

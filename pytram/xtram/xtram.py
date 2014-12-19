@@ -10,7 +10,7 @@ xTRAM estimator module
 
 import numpy as np
 from ..estimator import Estimator, NotConvergedWarning, ExpressionError
-from .ext import b_i_IJ_equation
+from .ext import b_i_IJ_equation, iterate_x
 
 
 
@@ -82,16 +82,23 @@ class XTRAM( Estimator ):
                 Default = False
         
         """
-        finc = None
+        finc = 0.0
         f_old = np.zeros(self.f_K.shape[0])
         self.b_i_IJ = np.zeros(shape=(self.n_markov_states, self.n_therm_states, self.n_therm_states))
+       
         if verbose:
             print "# %8s %16s" % ( "[Step]", "[rel. Increment]" )
         for i in xrange(maxiter):
             f_old[:]=self.f_K[:]
             b_i_IJ_equation( self.T_x, self.M_x, self.N_K, self.f_K, self.w_K, self.u_I_x, self.b_i_IJ )
             N_tilde = self._compute_sparse_N()
-            self._x_iteration(N_tilde)
+            C_i, C_j, C_ij, C_ji = self._compute_individual_N()
+            x_row, c_column = self._initialise_X_and_N(N_tilde)
+            ferr = iterate_x(N_tilde.shape[0],x_row.shape[0] , 1000,10e-7,C_i,C_j, C_ij, C_ji, x_row, c_column, x_row/x_row.sum())
+            print 'ferr'+str(ferr)
+            pi_curr =x_row/np.sum(x_row)
+            self._update_pi_K_i(pi_curr)
+            #self._x_iteration(N_tilde)
             self._update_free_energies()
             finc = np.sum(np.abs(f_old-self.f_K))
             if verbose:
@@ -216,6 +223,46 @@ class XTRAM( Estimator ):
     # Computes the extended count matrix                               #
     #                                                                  #
     ####################################################################
+    
+    def _compute_individual_N( self, factor=1.0 ):
+        C_i = []
+        C_j = []
+        C_ij = []
+        C_ji = []
+        for I in xrange(self.n_therm_states):
+            for i in xrange(self.n_markov_states):
+                for j in xrange(i,self.n_markov_states):
+                    s1=i+I*self.n_markov_states
+                    s2=j+I*self.n_markov_states
+                    if i==j:
+                        n_ij = (self.C_K_ij[I,i,j]*factor+self.b_i_IJ[i,I,I])
+                        n_ji = (self.C_K_ij[I,i,j]*factor+self.b_i_IJ[i,I,I])
+                        
+                        C_i.append(s1)
+                        C_j.append(s2)
+                        C_ij.append(n_ij)
+                        C_ji.append(n_ji)
+                    else:
+                        n_ij = self.C_K_ij[I,i,j]*factor
+                        n_ji = self.C_K_ij[I,j,i]*factor
+                        if n_ij or n_ji !=0: 
+                           C_i.append(s1)
+                           C_j.append(s2)
+                           C_ij.append(n_ij)
+                           C_ji.append(n_ji)
+        for I in xrange(self.n_therm_states):
+            for J in xrange(I,self.n_therm_states):
+                for i in xrange(self.n_markov_states):
+                    s1=self.n_markov_states*I+i
+                    s2=self.n_markov_states*J+i
+                    if I!=J:
+                        n_ij = self.b_i_IJ[i,I,J]
+                        n_ji = self.b_i_IJ[i,J,I]
+                        C_i.append(s1)
+                        C_j.append(s2)
+                        C_ij.append(n_ij)
+                        C_ji.append(n_ji)
+        return (np.array(C_i).astype(np.intc), np.array(C_j).astype(dtype=np.intc), np.array(C_ij), np.array(C_ji))
         
     def _compute_sparse_N( self , factor=1.0):
         r"""Computes a Nx4 array containing the count matrix in a sparse format

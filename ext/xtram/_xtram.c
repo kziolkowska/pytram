@@ -99,7 +99,7 @@ double _iterate_x(
 			for(j=0; j<pi_length;j++)
 			{
 				pi[j] = temp_pi[j];
-			}	
+			}
 			if(ferr<ftol)break;
 		}
 		
@@ -118,6 +118,7 @@ void update_x( double *x_row, sparse_x *x, int *C_i, int *C_j, double *C_ij, dou
 		x[t].i = i;
 		x[t].j = j;
 		x[t].value = (C_ij[t]+C_ji[t])/((c_column[i]/x_row[i])+(c_column[j]/x_row[j]));	
+		//printf("%d %f \n",t,x[t].value);
 	}
 	
 }
@@ -133,7 +134,7 @@ void update_x_row(int L, sparse_x *x, double *x_row, int x_row_l)
 	{
 		i = x[t].i;
 		j = x[t].j;
-		if(i==j) x_row[i]+=x[t].value; //check this!!!!
+		if(i==j) x_row[i]+=x[t].value; 
 		else
 		{
 			x_row[i]+=x[t].value;
@@ -144,7 +145,8 @@ void update_x_row(int L, sparse_x *x, double *x_row, int x_row_l)
 
 void compute_pi(double *pi, double *x_row, int l_pi)
 {
-	int i,sum=0;
+	int i;
+	double sum=0.0;
 	for (i=0; i<l_pi; i++) sum+=x_row[i];
 	for (i=0;i<l_pi;i++) pi[i]=x_row[i]/sum;
 }
@@ -164,8 +166,8 @@ double converged(double *pi_old, double *pi_new, int l_pi)
 }
 
 
-/*
-int main()
+
+/*int main()
 {
     int Ci[6] = {0,1,1,2,2,2};
 	int Cj[6] = {0,0,1,0,1,2};
@@ -173,7 +175,8 @@ int main()
 	double Cji[6] = {10.0, 20.0, 70.0, 30.0, 1.0, 2.0};
 	double x_row[3] = {95.0,125.5,92.5};
 	double c_column[3] = {60.0,101.0,152.0};
-	double pi [3] = { 0.19169329,  0.32268371,  0.485623 };
+	//double pi [3] = { 0.19169329,  0.32268371,  0.485623 };
+	double pi [3] = {0.0, 0.0, 0.0};
 	long n = 6;
 	long l = 3;
 	long maxiter = 1000;
@@ -181,7 +184,7 @@ int main()
 	double ferr = _iterate_x(n,l,maxiter,ftol,Ci, Cj, Cij, Cji,x_row, c_column,pi);
 	printf("ferr is %e\n", ferr);
     return 0;
-}
-*/
+}*/
+
 
 

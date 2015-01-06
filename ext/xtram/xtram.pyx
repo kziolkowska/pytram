@@ -49,6 +49,30 @@ def b_i_IJ_equation(
 		<double*> np.PyArray_DATA( b_i_IJ )
 		)
 
-def iterate_x():
-	return _iterate_x()
+def iterate_x(
+		long n_entries,
+		long pi_length,
+		long maxiter,
+		double ftol,
+		np.ndarray[int, ndim=1, mode="c"] C_i not None,
+		np.ndarray[int, ndim=1, mode="c"] C_j not None,
+		np.ndarray[double, ndim=1, mode="c"] C_ij not None,
+		np.ndarray[double, ndim=1, mode="c"] C_ji not None,
+		np.ndarray[double, ndim=1, mode="c"] x_row not None,
+		np.ndarray[double, ndim=1, mode="c"] c_column not None,
+		np.ndarray[double, ndim=1, mode="c"] pi not None
+	):
+	return _iterate_x(
+		n_entries,
+		pi_length,
+		maxiter,
+		ftol,
+		<int*> np.PyArray_DATA( C_i ),
+		<int*> np.PyArray_DATA( C_j ),
+		<double*> np.PyArray_DATA( C_ij ),
+		<double*> np.PyArray_DATA( C_ji ),
+		<double*> np.PyArray_DATA( x_row ),
+		<double*> np.PyArray_DATA( c_column ),
+		<double*> np.PyArray_DATA( pi )
+		)
 

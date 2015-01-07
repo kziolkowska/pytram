@@ -64,7 +64,7 @@ class XTRAM( Estimator ):
         self.f_K = self._compute_f_K()
         self.pi_K_i = self._compute_pi_K_i()
         self._ftol = 10e-15
-        self._maxiter = 100000
+        self._maxiter = 1000000
         
         
     def sc_iteration( self , ftol=10e-4, maxiter = 10, verbose = False):
@@ -88,19 +88,18 @@ class XTRAM( Estimator ):
        
         if verbose:
             print "# %8s %16s" % ( "[Step]", "[rel. Increment]" )
-        for i in xrange(maxiter):
+        for i in xrange( maxiter ):
             f_old[:]=self.f_K[:]
             b_i_IJ_equation( self.T_x, self.M_x, self.N_K, self.f_K, self.w_K, self.u_I_x, self.b_i_IJ )
             N_tilde = self._compute_sparse_N()
             C_i, C_j, C_ij, C_ji = self._compute_individual_N()
-            x_row, c_column = self._initialise_X_and_N(N_tilde)
-            ferr = iterate_x(N_tilde.shape[0],x_row.shape[0] , 1000,10e-7,C_i,C_j, C_ij, C_ji, x_row, c_column, x_row/x_row.sum())
-            print 'ferr'+str(ferr)
-            pi_curr =x_row/np.sum(x_row)
-            self._update_pi_K_i(pi_curr)
-            #self._x_iteration(N_tilde)
+            x_row, c_column = self._initialise_X_and_N( N_tilde )
+            ferr = iterate_x( N_tilde.shape[0],x_row.shape[0] , self._maxiter, self._ftol,C_i,C_j, C_ij, C_ji, x_row, c_column, x_row/x_row.sum() )
+            print 'ferr'+str( ferr )
+            pi_curr =x_row/np.sum( x_row )
+            self._update_pi_K_i( pi_curr )
             self._update_free_energies()
-            finc = np.sum(np.abs(f_old-self.f_K))
+            finc = np.sum(np.abs( f_old-self.f_K) )
             if verbose:
                 print "  %8d %16.8e" % ( i+1, finc )
             if finc < ftol:
@@ -108,49 +107,6 @@ class XTRAM( Estimator ):
         if finc > ftol:
                 raise NotConvergedWarning( "XTRAM", finc )
 
-    def _x_iteration( self , N_tilde, verbose = False):
-        r""" Inner iteration routine that iterates x_i^I until convergence
-        
-        Parameters
-        ----------
-            N_tilde : 2D numpy array
-                contains Nx4 entries in a sparse format for the extended count matrix 
-                N_tilde[0] = i
-                N_tile[1] = j
-                N_tile[2] = N_ij
-                N_tile[3] = N_ji
-            verbose : boolean
-                be loud and noisy
-        
-        """
-        X_row, N_column = self._initialise_X_and_N(N_tilde)
-        pi_curr = X_row/np.sum(X_row)
-        pi_old = pi_curr[:]
-        perr = None
-        loglikelihood=False
-        if loglikelihood:
-            ll_hist = []
-        if verbose:
-            print "# %8s %16s" % ( "[Step]", "[rel. Increment]" )
-        for i in xrange(self._maxiter):
-            #replace this function with c-function
-            pi_old[:] = pi_curr[:]
-            X = self._update_x( N_tilde , X_row, N_column)
-            X_row = self._update_x_row(X, X_row)
-            if loglikelihood:
-                ll_hist.append(self._compute_loglikelihood())
-            perr = np.linalg.norm(pi_old-X_row/np.sum(X_row))
-            pi_curr[:] =X_row/np.sum(X_row)
-            if verbose:
-                print "  %8d %16.8e %16.8e" % ( i+1, perr, np.sum(X_row) )
-            if perr < self._ftol:
-                break
-        if perr > self._ftol:
-            raise NotConvergedWarning( "XTRAM", perr )
-        self._update_pi_K_i(pi_curr)
-            
-            
-            
     def _initialise_X_and_N( self, N_tilde ):
         r"""
             sets default values for x_i and N_i
@@ -168,38 +124,6 @@ class XTRAM( Estimator ):
                 X_row[entry[0]]+=(entry[2]+entry[3])*0.5
                 X_row[entry[1]]+=(entry[2]+entry[3])*0.5
         return (X_row, N_column)
-    
-    
-    def _update_x( self, N_tilde, X_row, N_column ):
-        r"""
-            computes X from the extended coutn matrix and the current X_row and N_column
-        """
-        _X = np.zeros(shape=(N_tilde.shape[0],3))
-        for t in xrange(N_tilde.shape[0]):
-            
-            i = N_tilde[t,0]
-            j = N_tilde[t,1]
-            _X[t,0] = i
-            _X[t,1] = j
-            numerator = (N_tilde[t,2]+N_tilde[t,3])
-            denominator = (N_column[i]/X_row[i])+(N_column[j]/X_row[j])
-            _X[t,2] = numerator/denominator
-        return _X
-        
-        
-    def _update_x_row( self, X, X_row):
-        r"""
-            updates the x_row according to X
-        """
-        X_row = X_row*0
-        
-        for i in xrange(X.shape[0]):
-            if X[i,0]==X[i,1]:
-                X_row[X[i,0]]+=X[i,2]
-            else:
-                X_row[X[i,0]]+=X[i,2]
-                X_row[X[i,1]]+=X[i,2]
-        return X_row
         
     def _update_pi_K_i( self, pi_curr ):
         r"""
